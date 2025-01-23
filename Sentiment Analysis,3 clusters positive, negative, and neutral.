@@ -1,0 +1,51 @@
+import pandas as pd
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.metrics import classification_report
+
+# Download NLTK resources
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# Load dataset from Excel file
+file_path = r"C:\Users\acer1\Downloads\ai&ml\Dataset_3.5k.xlsx"
+df = pd.read_excel(file_path)
+#df = pd.read_excel("Dataset_3.5k.xlsx")
+
+# Define a function for text preprocessing
+def preprocess_text(text):
+    # Convert text to lowercase
+    text = text.lower()
+    # Tokenization
+    tokens = word_tokenize(text)
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    filtered_tokens = [word for word in tokens if word not in stop_words]
+    # Lemmatization
+    lemmatizer = WordNetLemmatizer()
+    lemmatized_tokens = [lemmatizer.lemmatize(word) for word in filtered_tokens]
+    # Join the tokens back into a single string
+    preprocessed_text = ' '.join(lemmatized_tokens)
+    return preprocessed_text
+
+# Preprocess the 'title' column
+df['preprocessed_title'] = df['title'].apply(preprocess_text)
+
+# Vectorize the preprocessed text using TF-IDF
+tfidf_vectorizer = TfidfVectorizer()
+X = tfidf_vectorizer.fit_transform(df['preprocessed_title'])
+
+# Perform K-means clustering
+kmeans = KMeans(n_clusters=3, random_state=42)
+df['cluster'] = kmeans.fit_predict(X)
+
+# Assign sentiment labels based on the clusters
+df['sentiment'] = df['cluster'].map({0: 'positive', 1: 'negative', 2: 'neutral'})
+
+# Evaluate the clustering results
+print(df[['title', 'sentiment']])
